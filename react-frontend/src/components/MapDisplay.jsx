@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState,useEffect} from 'react'
 import {
   MapContainer,
   Marker,
@@ -6,11 +6,14 @@ import {
   FeatureGroup,
   Circle,
   Polyline,
+  useMap,
 } from 'react-leaflet'
 import { TileLayer } from 'react-leaflet/TileLayer'
 import { GeoJSON } from 'react-leaflet/GeoJSON'
 import { kml } from '@tmcw/togeojson'
 import { useMapEvents } from 'react-leaflet/hooks'
+// import {geosearch} from "esri-leaflet-geocoder"
+import { OpenStreetMapProvider,GeoSearchControl } from 'leaflet-geosearch';
 
 function MapDisplay({ isSelectedShape }) {
   let isKML = false
@@ -109,13 +112,30 @@ function MapDisplay({ isSelectedShape }) {
   }
 
   function MapChildContainer({ isSelectedShape }) {
+    const map=useMap();
+    useEffect(()=>{
+    const provider = new OpenStreetMapProvider();
+    const searchControl = new GeoSearchControl({
+      provider: provider,
+      position:"topright",
+      autoComplete: true, 
+      autoCompleteDelay: 250,
+      style: 'button',
+      showMarker: true,
+      autoClose: true,
+      searchLabel: 'Enter Location To Search'
+      
+    });
+    map.addControl(searchControl);
+    return () => map.removeControl(searchControl);
+    },[])
     const [selectedPosition, setSelectedPosition] = useState({
       latitude: 0,
       longitude: 0,
     })
     const [multiPolygon, setMultiPolygon] = useState([])
 
-    const map = useMapEvents({
+    useMapEvents({
       click: (location) => {
         console.log(location)
         const { lat, lng } = location.latlng
@@ -153,7 +173,7 @@ function MapDisplay({ isSelectedShape }) {
             position={[selectedPosition.latitude, selectedPosition.longitude]}
           >
             <Popup>
-              A pretty CSS3 popup.zz <br /> Easily customizable.
+              Marker Placed <br />
             </Popup>
           </Marker>
         ) : null}
@@ -161,7 +181,7 @@ function MapDisplay({ isSelectedShape }) {
         {/* CIRCLE */}
         {selectedPosition.latitude !== 0 && isSelectedShape === 'Circle' ? (
           <FeatureGroup pathOptions={{ color: 'purple' }}>
-            <Popup>Popup in FeatureGroup</Popup>
+            <Popup>Circular Layer Selected</Popup>
             <Circle
             
               key={`circle-selectedPosition[0]`}
@@ -193,7 +213,7 @@ function MapDisplay({ isSelectedShape }) {
       >
         <MapChildContainer
           isSelectedShape={isSelectedShape}
-        ></MapChildContainer>
+        ></MapChildContainer>     
       </MapContainer>
     </div>
   )
