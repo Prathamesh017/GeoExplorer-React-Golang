@@ -1,4 +1,4 @@
-import React, { useState,useEffect} from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   MapContainer,
   Marker,
@@ -9,199 +9,130 @@ import {
   useMap,
 } from 'react-leaflet'
 import { TileLayer } from 'react-leaflet/TileLayer'
-import { GeoJSON } from 'react-leaflet/GeoJSON'
 import { kml } from '@tmcw/togeojson'
+import { GeoJSON } from 'react-leaflet'
 import { useMapEvents } from 'react-leaflet/hooks'
-// import {geosearch} from "esri-leaflet-geocoder"
-import { OpenStreetMapProvider,GeoSearchControl } from 'leaflet-geosearch';
+import { OpenStreetMapProvider, GeoSearchControl } from 'leaflet-geosearch'
+import { toast, ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
-function MapDisplay({ isSelectedShape }) {
-  let isKML = false
-  const kmlText = `<?xml version="1.0" encoding="UTF-8"?>
-  <kml xmlns="http://www.opengis.net/kml/2.2">
-    <Document>
-       <Placemark>
-         <name>London</name>
-         <description>Capital city of the United Kingdom</description>
-         <Polygon>
-           <outerBoundaryIs>
-             <LinearRing>
-               <coordinates>
-                 -0.5103759765625,51.28676067579748,0 
-                 -0.5103759765625,51.69199857120281,0
-                 0.33447265625,51.69199857120281,0 
-                 0.33447265625,51.28676067579748,0 
-                 -0.5103759765625,51.28676067579748,0
-               </coordinates>
-             </LinearRing>
-           </outerBoundaryIs>
-         </Polygon>
-        </Placemark>
-     </Document>
-   </kml>
-   `
-  const geoJSON = {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [77.2436, 28.6159], // Longitude, Latitude of stadium 1
-        },
-        properties: {
-          name: 'Eden Gardens',
-          city: 'Kolkata',
-          capacity: 66000,
-          sports: ['Cricket'],
-        },
-      },
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [77.5928, 12.9786], // Longitude, Latitude of stadium 2
-        },
-        properties: {
-          name: 'M. Chinnaswamy Stadium',
-          city: 'Bengaluru',
-          capacity: 38000,
-          sports: ['Cricket'],
-        },
-      },
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [72.8258, 18.9402], // Longitude, Latitude of stadium 3
-        },
-        properties: {
-          name: 'Wankhede Stadium',
-          city: 'Mumbai',
-          capacity: 33000,
-          sports: ['Cricket'],
-        },
-      },
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [77.1711, 28.6129], // Longitude, Latitude of stadium 4
-        },
-        properties: {
-          name: 'Feroz Shah Kotla Ground',
-          city: 'Delhi',
-          capacity: 41000,
-          sports: ['Cricket'],
-        },
-      },
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [77.6271, 12.9784], // Longitude, Latitude of stadium 5
-        },
-        properties: {
-          name: 'M. A. Chidambaram Stadium',
-          city: 'Chennai',
-          capacity: 50000,
-          sports: ['Cricket'],
-        },
-      },
-    ],
+function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
+  let isKML = fileUploadData.fileType
+    ? fileUploadData.fileType === 'geoJSON'
+      ? false
+      : true
+    : false
+  const defaultGeoJSON = {
+    type: 'Feature',
+    properties: {
+      name: 'Mumbai',
+      'marker-color': '#ff0000',
+      'marker-symbol': 'star',
+    },
+    geometry: {
+      type: 'Point',
+      coordinates: [72.8777, 19.076],
+    },
   }
 
   function MapChildContainer({ isSelectedShape }) {
-    const map=useMap();
-    useEffect(()=>{
-    const provider = new OpenStreetMapProvider();
-    const searchControl = new GeoSearchControl({
-      provider: provider,
-      position:"topright",
-      autoComplete: true, 
-      autoCompleteDelay: 250,
-      style: 'button',
-      showMarker: true,
-      autoClose: true,
-      searchLabel: 'Enter Location To Search'
-      
-    });
-    map.addControl(searchControl);
-    return () => map.removeControl(searchControl);
-    },[])
+    const map = useMap()
+    useEffect(() => {
+      const provider = new OpenStreetMapProvider()
+      const searchControl = new GeoSearchControl({
+        provider: provider,
+        position: 'topright',
+        autoComplete: true,
+        autoCompleteDelay: 250,
+        style: 'button',
+        showMarker: true,
+        autoClose: true,
+        searchLabel: 'Enter Location To Search',
+      })
+      map.addControl(searchControl)
+      return () => map.removeControl(searchControl)
+    }, [])
     const [selectedPosition, setSelectedPosition] = useState({
       latitude: 0,
       longitude: 0,
     })
     const [multiPolygon, setMultiPolygon] = useState([])
+  
 
     useMapEvents({
       click: (location) => {
-        console.log(location)
         const { lat, lng } = location.latlng
         setMultiPolygon((existing) => [...existing, [lat, lng]])
-        console.log(multiPolygon)
-
-        
         setSelectedPosition({ latitude: lat, longitude: lng })
       },
     })
-    const data = isKML ? kmlText : geoJSON
-    let convertedData
-    if (isKML) {
-      const kmlObj = new DOMParser().parseFromString(data, 'text/xml')
-      convertedData = kml(kmlObj)
-    } else {
-      convertedData = data
-    }
 
-    return (
-      <>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ></TileLayer>
-        <GeoJSON
-          key={`geo-json-3-selectedPosition[0]`}
-          data={convertedData}
-        ></GeoJSON>
+    try {
+      const data = fileUploadData.fileData
+        ? isKML
+          ? fileUploadData.fileData
+          : JSON.parse(fileUploadData.fileData)
+        : defaultGeoJSON 
+      let convertedData
+      if (isKML) {
+        const kmlObj = new DOMParser().parseFromString(data, 'text/xml')
+        convertedData = kml(kmlObj)
+      } else {
+        convertedData = data
+      }
+      // if(data!==defaultGeoJSON && fileUploadData){
+      //   toast('File Upload Successfull', { type: 'success' })
+      // }
 
-        {/* MARKER */}
-        {selectedPosition.latitude !== 0 && isSelectedShape === 'Point' ? (
-          <Marker
-            key={`marker-selectedPosition[0]`}
-            position={[selectedPosition.latitude, selectedPosition.longitude]}
-          >
-            <Popup>
-              Marker Placed <br />
-            </Popup>
-          </Marker>
-        ) : null}
+      return (
+        <>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          ></TileLayer>
+          <GeoJSON
+            key={`geo-json-3-selectedPosition[0]`}
+            data={convertedData}
+          ></GeoJSON>
 
-        {/* CIRCLE */}
-        {selectedPosition.latitude !== 0 && isSelectedShape === 'Circle' ? (
-          <FeatureGroup pathOptions={{ color: 'purple' }}>
-            <Popup>Circular Layer Selected</Popup>
-            <Circle
-            
-              key={`circle-selectedPosition[0]`}
-              center={[selectedPosition.latitude, selectedPosition.longitude]}
-              radius={100000}
+          {/* MARKER */}
+          {selectedPosition.latitude !== 0 && isSelectedShape === 'Point' ? (
+            <Marker
+              key={`marker-selectedPosition[0]`}
+              position={[selectedPosition.latitude, selectedPosition.longitude]}
+            >
+              <Popup>
+                Marker Placed <br />
+              </Popup>
+            </Marker>
+          ) : null}
+
+          {/* CIRCLE */}
+          {selectedPosition.latitude !== 0 && isSelectedShape === 'Circle' ? (
+            <FeatureGroup pathOptions={{ color: 'purple' }}>
+              <Popup>Circular Layer Selected</Popup>
+              <Circle
+                key={`circle-selectedPosition[0]`}
+                center={[selectedPosition.latitude, selectedPosition.longitude]}
+                radius={100000}
+              />
+            </FeatureGroup>
+          ) : null}
+          {multiPolygon.length >= 2 && isSelectedShape === 'Line' ? (
+            <Polyline
+              pathOptions={{
+                color: 'lime',
+                weight: 2,
+                opacity: 1,
+              }}
+              positions={multiPolygon}
             />
-          </FeatureGroup>
-        ) : null}
-        {multiPolygon.length >= 2 && isSelectedShape === 'Line' ? (
-          <Polyline
-            pathOptions={{
-              color: 'lime',
-              weight: 2,
-              opacity: 1,
-            }}
-            positions={multiPolygon}
-          />
-        ) : null}
-      </>
-    )
+          ) : null}
+        </>
+      )
+    } catch {
+      toast('Invalid File Format,Refresh', { type: 'error' })
+    }
   }
 
   return (
@@ -213,8 +144,9 @@ function MapDisplay({ isSelectedShape }) {
       >
         <MapChildContainer
           isSelectedShape={isSelectedShape}
-        ></MapChildContainer>     
+        ></MapChildContainer>
       </MapContainer>
+      <ToastContainer position="bottom-right" theme="colored" />
     </div>
   )
 }

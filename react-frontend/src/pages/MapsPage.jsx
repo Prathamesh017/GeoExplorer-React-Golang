@@ -1,4 +1,4 @@
-import React, { useEffect,useState } from 'react'
+import React, { useEffect, useState } from 'react'
 // import Map from '../components/MapDisplay'
 import MapDisplay from '../components/MapDisplay'
 import MapController from '../components/MapController'
@@ -8,6 +8,10 @@ import MapController from '../components/MapController'
 
 function ImagePage() {
   const [isSelectedShape, setSelectedShape] = useState('')
+  const [fileUploadData, setFileUploadData] = useState({
+    fileType: '',
+    fileData: '',
+  })
   // const navigate=useNavigate();
   // const [user,setUser]=useState("");
   // const [imgs,setImgs]=useState([]);
@@ -36,8 +40,15 @@ function ImagePage() {
   }, [])
   return (
     <div className="h-screen w-screen grid grid-cols-2">
-    <MapDisplay isSelectedShape={isSelectedShape} ></MapDisplay>
-    <MapController  isSelectedShape={isSelectedShape} setSelectedShape={setSelectedShape}></MapController>
+      <MapDisplay
+        isSelectedShape={isSelectedShape}
+        fileUploadData={fileUploadData}
+      ></MapDisplay>
+      <MapController
+        isSelectedShape={isSelectedShape}
+        setSelectedShape={setSelectedShape}
+        setFileUploadData={setFileUploadData}
+      ></MapController>
     </div>
   )
 }
