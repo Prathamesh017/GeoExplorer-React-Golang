@@ -57,7 +57,7 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
       longitude: 0,
     })
     const [multiPolygon, setMultiPolygon] = useState([])
-  
+
 
     useMapEvents({
       click: (location) => {
@@ -80,6 +80,7 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
       } else {
         convertedData = data
       }
+      localStorage.setItem("geoJSON",JSON.stringify(convertedData));
       // if(data!==defaultGeoJSON && fileUploadData){
       //   toast('File Upload Successfull', { type: 'success' })
       // }

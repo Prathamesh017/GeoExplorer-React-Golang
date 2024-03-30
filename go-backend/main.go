@@ -18,7 +18,9 @@ func main() {
 	var router = gin.Default()
   
   //define routes
+  routes.AuthRoute(router);
   routes.UserRoute(router);
+
   
   router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK,gin.H{"success":"ACCESS"});
