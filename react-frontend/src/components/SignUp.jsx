@@ -1,5 +1,6 @@
 import React,{useState} from 'react'
-
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 function Signup(props) {
   const [user,setUser]=useState({
     name:"",
@@ -11,6 +12,8 @@ function Signup(props) {
     showError:false,
     showErrorMsg:"",
   })
+  const navigate=useNavigate();
+
 
   async function handleSignup(){
     try {
@@ -25,12 +28,13 @@ function Signup(props) {
       return;
     }
     setError({showError:false,showErrorMsg:""})
-    // const response = await axios.post(
-    //   `${process.env.REACT_APP_API_URL}/api/auth/register`,
-    //   {name,email,password}
-    // )
-    // localStorage.setItem('user', JSON.stringify(response.data.content));
-    // navigate('/image')
+    const response = await axios.post(
+      `${process.env.REACT_APP_API_URL}/auth/register`,
+      {name,email,password,location:[]}
+    )
+    console.log(response);
+    localStorage.setItem('token', JSON.stringify(response.data.user.token))
+    navigate("/maps")
 
 
   } catch (err) {

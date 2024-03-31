@@ -1,5 +1,6 @@
 import React, { useState} from 'react'
-
+import axios from "axios";
+import  {useNavigate}from "react-router-dom";
 function Login(props) {
   const [user, setUser] = useState({
     email: '',
@@ -9,6 +10,7 @@ function Login(props) {
     showError: false,
     showErrorMsg: '',
   })
+  const navigate=useNavigate();
  
 
   async function handleLogin() {
@@ -19,13 +21,17 @@ function Login(props) {
         return
       }
       setError({ showError: false, showErrorMsg: '' })
-      // const response = await axios.post(
-      //   `${process.env.REACT_APP_API_URL}/api/auth/login`,
-      //   user,
-      // )
-      // localStorage.setItem('user', JSON.stringify(response.data.content))
+      console.log(process.env.REACT_APP_API_URL);
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/auth/login`,
+        user,
+      )
+      console.log(response);
+      localStorage.setItem('token', JSON.stringify(response.data.token))
+      navigate("/maps")
     
     } catch (err) {
+      console.log(err);
       setError({ showError: true, showErrorMsg: err.response.data.message })
     }
   }

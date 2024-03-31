@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
   routes "go-backend/routes"
+	"github.com/gin-contrib/cors"
 	database "go-backend/database"
 
 )
@@ -17,6 +18,11 @@ func main() {
 	}
 	var router = gin.Default()
   
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET" ,"POST", "PUT", "PATCH", "DELETE","OPTIONS"},
+		AllowHeaders: []string{"Content-Type,","Authorization","Access-Control-Allow-Origin, Access-Control-Allow-Headers"},
+}))
   //define routes
   routes.AuthRoute(router);
   routes.UserRoute(router);

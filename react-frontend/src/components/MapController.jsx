@@ -3,25 +3,26 @@ import Cicle from '../shapes/circle'
 import Line from '../shapes/line'
 import Point from '../shapes/point'
 import FileUpload from './FileUpload'
+import { useNavigate } from 'react-router-dom'
 
 function MapController({
   isSelectedShape,
   setSelectedShape,
   setFileUploadData,
 }) {
+  const navigate = useNavigate()
   function shapeOnClick(shape) {
     shape === isSelectedShape ? setSelectedShape('') : setSelectedShape(shape)
   }
 
-  function handleSave() {
-    const data = JSON.parse(localStorage.getItem('geoJSON'))
-    if (data) {
-      console.log(data)
-    }
+  function Logout() {
+    localStorage.clear()
+    navigate('/')
   }
+
   return (
-    <div className="w-full flex flex-row gap-2 bg-gradient-to-br  from-gray-200 to-gray-300">
-      <div className="flex-1  mt-10">
+    <div className="w-full  flex flex-row gap-2 bg-gradient-to-br  from-gray-200 to-gray-300">
+      <div className="w-full  flex-1  mt-10">
         <h1 className="text-center text-xl text-[#00cc99]">
           Choose Shapes To Add
         </h1>
@@ -59,7 +60,7 @@ function MapController({
           </button>
         </div>
         {isSelectedShape && (
-          <div className='flex w-full flex-col'>
+          <div className="flex w-full flex-col">
             <p className="text-center text-[#00cc99] mt-5 text-lg">
               {isSelectedShape === 'Point'
                 ? 'Point Marker On Map'
@@ -67,14 +68,16 @@ function MapController({
                 ? 'Choose Points On Map to Make Polygons'
                 : 'Add A Circular Layer'}
             </p>
-            <button
-              onClick={handleSave}
-              className="w-1/2 self-center mt-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-center  text-slate-200 hover:text-slate-900 px-1 py-2 mt-2"
-            >
-              Save Shapes
-            </button>
           </div>
         )}
+        <div className='w-full flex justify-center'>
+        <button
+          onClick={Logout}
+          className="w-1/2  my-8  mx-2 bg-[#FFA500] hover:bg-[#FF8C00] text-center  text-slate-200 hover:text-slate-900 px-1 py-2 mt-2"
+        >
+          Logout
+        </button>
+        </div>
       </div>
 
       <div className="flex-1  mt-10">

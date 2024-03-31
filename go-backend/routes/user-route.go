@@ -8,6 +8,7 @@ import(
 
 func UserRoute(request *gin.Engine){
 	request.Use(middleware.AuthenticateMiddleware)
-	request.GET("user/:id",controllers.GetUser)
+	request.GET("user",controllers.GetUser)
+	request.POST("user",controllers.AddLocation)
 	
 }

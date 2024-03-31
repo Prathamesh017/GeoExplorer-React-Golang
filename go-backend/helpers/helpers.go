@@ -1,9 +1,9 @@
 package helpers
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"go.mongodb.org/mongo-driver/bson/primitive"
   "time"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
@@ -24,10 +24,11 @@ func CheckPasswordHash(password, hash string) bool {
 //called claims to denote the fact that user claims to be whatever is embeded in the token
 type customClaims struct {
   Name string 
+	Id    primitive.ObjectID
 	jwt.StandardClaims
 }
 
-func GenerateToken(name string) (signedToken string,err error){
+func GenerateToken(id primitive.ObjectID ,name string) (signedToken string,err error){
 	EnvLoadErr:=godotenv.Load(".env");
 	if EnvLoadErr!=nil{
 		panic("ENV File Missing")
@@ -37,6 +38,7 @@ func GenerateToken(name string) (signedToken string,err error){
 
 	claims := customClaims{
 		Name: name,
+		Id: id,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(60 * time.Minute).Unix(),
 			Issuer:    "prathamesh",
@@ -60,7 +62,6 @@ func ValidateToken(signedToken string)(claims *customClaims, msg string){
 	}
 
 	var SECRET_KEY string = os.Getenv("SECRET_KEY")
-	fmt.Print(SECRET_KEY)
 	token, err := jwt.ParseWithClaims(
     signedToken,         // 1. The signed JWT token to parse
     &customClaims{},   // 2. An instance of the struct where the claims will be stored
@@ -74,7 +75,6 @@ func ValidateToken(signedToken string)(claims *customClaims, msg string){
 		return
 	}
 	claims, ok := token.Claims.(*customClaims)
-	fmt.Println(claims);
 	if !ok{
 		msg ="Token is Invalid"
 		return

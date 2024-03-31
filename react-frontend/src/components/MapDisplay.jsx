@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
   MapContainer,
-  Marker,
-  Popup,
-  FeatureGroup,
-  Circle,
-  Polyline,
   useMap,
 } from 'react-leaflet'
 import { TileLayer } from 'react-leaflet/TileLayer'
@@ -15,27 +10,82 @@ import { useMapEvents } from 'react-leaflet/hooks'
 import { OpenStreetMapProvider, GeoSearchControl } from 'leaflet-geosearch'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
-function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
+let defaultGeoJSON = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: {
+        name: 'Mumbai',
+        'marker-color': '#ff0000',
+        'marker-symbol': 'star',
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [72.8777, 19.076],
+      },
+    },
+   
+  ],
+}
+function generateCircle(center, radius) {
+  const numSegments = 64 // Number of line segments to approximate a circle
+
+  const coordinates = []
+
+  for (let i = 0; i < numSegments; i++) {
+    const angle = (Math.PI * 2 * i) / numSegments
+    const x = center[0] + radius * Math.cos(angle)
+    const y = center[1] + radius * Math.sin(angle)
+    coordinates.push([x, y])
+  }
+
+  // Close the circle
+  coordinates.push(coordinates[0])
+
+  return [coordinates]
+}
+
+function MapDisplay({ isSelectedShape, fileUploadData, setFileUploadData }) {
+  const navigate = useNavigate()
+  const [location, setLocation] = useState(defaultGeoJSON)
+  const getMaps = async () => {
+    try {
+      let token = JSON.parse(localStorage.getItem('token'))
+      if (!token) {
+        navigate('/')
+        return
+      }
+      let config = {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/user`,
+        config,
+      )
+
+      const locations = response.data.user.location
+      setLocation({
+        ...location,
+        features: [...location.features, ...locations],
+      })
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  useEffect(() => {
+    getMaps()
+  }, [])
   let isKML = fileUploadData.fileType
     ? fileUploadData.fileType === 'geoJSON'
       ? false
       : true
     : false
-  const defaultGeoJSON = {
-    type: 'Feature',
-    properties: {
-      name: 'Mumbai',
-      'marker-color': '#ff0000',
-      'marker-symbol': 'star',
-    },
-    geometry: {
-      type: 'Point',
-      coordinates: [72.8777, 19.076],
-    },
-  }
 
-  function MapChildContainer({ isSelectedShape }) {
+  function MapChildContainer({ location, isSelectedShape }) {
     const map = useMap()
     useEffect(() => {
       const provider = new OpenStreetMapProvider()
@@ -52,18 +102,70 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
       map.addControl(searchControl)
       return () => map.removeControl(searchControl)
     }, [])
-    const [selectedPosition, setSelectedPosition] = useState({
-      latitude: 0,
-      longitude: 0,
-    })
-    const [multiPolygon, setMultiPolygon] = useState([])
+    // const [selectedPosition, setSelectedPosition] = useState({
+    //   latitude: 0,
+    //   longitude: 0,
+    // })
 
+    // const [multiPolygon, setMultiPolygon] = useState([])
 
     useMapEvents({
-      click: (location) => {
-        const { lat, lng } = location.latlng
-        setMultiPolygon((existing) => [...existing, [lat, lng]])
-        setSelectedPosition({ latitude: lat, longitude: lng })
+      click: (loc) => {
+        const { lat, lng } = loc.latlng
+        if (isSelectedShape === 'Circle' || isSelectedShape === 'Point') {
+          const feature = {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: isSelectedShape === 'Point' ? 'Point' : 'Polygon',
+              coordinates:
+                isSelectedShape === 'Point'
+                  ? [lng, lat]
+                  : generateCircle([lng, lat], 1),
+            },
+          }
+          setLocation({
+            ...location,
+            features: [...location.features, feature],
+          })
+          localStorage.setItem(
+            'geoJSON',
+            JSON.stringify([...location.features, feature]),
+          )
+        } else {
+          const arr = location
+          const lastObj = arr.features[arr.features.length - 1]
+          if (lastObj.geometry.type === 'LineString') {
+            const lastLLObj = arr.features.pop()
+            lastLLObj.geometry.coordinates.push([lng, lat])
+            setLocation({
+              ...location,
+              features: [...arr.features, lastLLObj],
+            })
+            localStorage.setItem(
+              'geoJSON',
+              JSON.stringify([...arr.features, lastLLObj]),
+            )
+          } else {
+            const feature = {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: [[lng, lat]],
+              },
+            }
+
+            setLocation({
+              ...location,
+              features: [...location.features, feature],
+            })
+            localStorage.setItem(
+              'geoJSON',
+              JSON.stringify([...location.features], feature),
+            )
+          }
+        }
       },
     })
 
@@ -72,7 +174,7 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
         ? isKML
           ? fileUploadData.fileData
           : JSON.parse(fileUploadData.fileData)
-        : defaultGeoJSON 
+        : location
       let convertedData
       if (isKML) {
         const kmlObj = new DOMParser().parseFromString(data, 'text/xml')
@@ -80,10 +182,19 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
       } else {
         convertedData = data
       }
-      localStorage.setItem("geoJSON",JSON.stringify(convertedData));
-      // if(data!==defaultGeoJSON && fileUploadData){
-      //   toast('File Upload Successfull', { type: 'success' })
-      // }
+      if (fileUploadData.fileData) {
+        
+        convertedData = {
+          ...convertedData,
+          features: [...convertedData.features, ...location.features],
+        }
+        localStorage.setItem(
+          'geoJSON',
+          JSON.stringify(convertedData.features),
+        )
+
+         
+      }
 
       return (
         <>
@@ -97,7 +208,7 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
           ></GeoJSON>
 
           {/* MARKER */}
-          {selectedPosition.latitude !== 0 && isSelectedShape === 'Point' ? (
+          {/* {selectedPosition.latitude !== 0 && isSelectedShape === 'Point' ? (
             <Marker
               key={`marker-selectedPosition[0]`}
               position={[selectedPosition.latitude, selectedPosition.longitude]}
@@ -106,10 +217,10 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
                 Marker Placed <br />
               </Popup>
             </Marker>
-          ) : null}
+          ) : null} */}
 
           {/* CIRCLE */}
-          {selectedPosition.latitude !== 0 && isSelectedShape === 'Circle' ? (
+          {/* {selectedPosition.latitude !== 0 && isSelectedShape === 'Circle' ? (
             <FeatureGroup pathOptions={{ color: 'purple' }}>
               <Popup>Circular Layer Selected</Popup>
               <Circle
@@ -118,8 +229,8 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
                 radius={100000}
               />
             </FeatureGroup>
-          ) : null}
-          {multiPolygon.length >= 2 && isSelectedShape === 'Line' ? (
+          ) : null} */}
+          {/* {multiPolygon.length >= 2 && isSelectedShape === 'Line' ? (
             <Polyline
               pathOptions={{
                 color: 'lime',
@@ -128,7 +239,7 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
               }}
               positions={multiPolygon}
             />
-          ) : null}
+          ) : null} */}
         </>
       )
     } catch {
@@ -145,8 +256,11 @@ function MapDisplay({ isSelectedShape, fileUploadData,setFileUploadData }) {
       >
         <MapChildContainer
           isSelectedShape={isSelectedShape}
+          location={location}
         ></MapChildContainer>
       </MapContainer>
+
+
       <ToastContainer position="bottom-right" theme="colored" />
     </div>
   )

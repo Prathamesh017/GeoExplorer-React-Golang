@@ -1,17 +1,17 @@
 package middleware
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	helpers "go-backend/helpers"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 func AuthenticateMiddleware(c *gin.Context) {
-	//  fmt.Println(c.Request.Header)
-	clientToken := c.Request.Header.Get("token")
-	// clientToken := BearerToken[len("Bearer "):]
-	fmt.Println(clientToken)
+
+	BearerToken := c.GetHeader("Authorization")
+	clientToken := BearerToken[len("Bearer "):]
+
+
 
 	if clientToken == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "No Authorization header provided"})
@@ -25,6 +25,6 @@ func AuthenticateMiddleware(c *gin.Context) {
 		return
 	}
 	c.Set("name", claims.Name)
-	c.Set("_id", claims.Id)
+	c.Set("id", claims.Id)
 
 }

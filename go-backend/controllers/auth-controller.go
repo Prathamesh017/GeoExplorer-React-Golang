@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	database "go-backend/database"
 	helpers "go-backend/helpers"
 	models "go-backend/models"
@@ -16,8 +15,8 @@ import (
 )
 
 var validate = validator.New()
-
 func RegisterUser(c *gin.Context) {
+
 	var userCollection = database.OpenCollection("users")
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	var user models.User
@@ -60,10 +59,11 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	token, _ := helpers.GenerateToken(user.Name)
+	token, _ := helpers.GenerateToken(user.ID,user.Name)
 
 	user.Token = token
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "User Registered"})
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "User Registered","user":user})
 }
 func LoginUser(c *gin.Context) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
@@ -85,11 +85,11 @@ func LoginUser(c *gin.Context) {
 	}
 	passwordIsValid := helpers.CheckPasswordHash(user.Password, foundUser.Password)
 	if !passwordIsValid {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Incorrec Password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Incorrect Password"})
 		return
 	}
-	fmt.Println(foundUser.Name);
-	token, _ := helpers.GenerateToken(foundUser.Name)
+
+	token, _ := helpers.GenerateToken(foundUser.ID,foundUser.Name)
 	foundUser.Token = token
 
 	c.JSON(http.StatusOK, foundUser)
