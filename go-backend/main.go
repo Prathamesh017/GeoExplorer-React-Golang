@@ -23,15 +23,14 @@ func main() {
 		AllowMethods: []string{"GET" ,"POST", "PUT", "PATCH", "DELETE","OPTIONS"},
 		AllowHeaders: []string{"Content-Type,","Authorization","Access-Control-Allow-Origin, Access-Control-Allow-Headers"},
 }))
-  //define routes
-  routes.AuthRoute(router);
-  routes.UserRoute(router);
+ 
 
   
   router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK,gin.H{"success":"ACCESS"});
 	})
-
+  routes.AuthRoute(router);
+  routes.UserRoute(router);
 
   //db  connection 
   database.ConnectDatabase()
